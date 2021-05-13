@@ -27,13 +27,13 @@ const trivia = [
     },
     {
         q: "How does a soccer match begin?",
-        a: ["a tip-off", "", "a kick-off", "a toss-up", "a rock papper scissors game"],
+        a: ["a tip-off", "a kick-off", "a toss-up", "a rock papper scissors game"],
         correctIndex: 1
     }
 ];
 
 //settings
-const initialTime = 60,
+let initialTime = 60,
     timeCostForWrongAnswer = -10,
     delayAfterQuestion = 1000; //milliseconds
 
@@ -41,6 +41,8 @@ const initialTime = 60,
 var score,
     timeRemaining,
     currentQuestionIndex;
+
+var gameInSession = false
 
 //initialization & event listeners
 init();
@@ -53,23 +55,53 @@ function init() {
 
 //timer logic
 
+const timer = (ms) => new Promise((res) => setTimeout(res, ms))
+
+async function startTimer() {
+    while (gameInSession) {
+        await timer(1000)
+        timeRemaining--
+        if (timeRemaining <= 0) {
+            // debugger
+            timeRemaining = 0
+            gameInSession = false
+            return gameOver()
+        }
+        document.getElementById('time').innerText = timeRemaining
+
+    }
+}
+
+
+
+
 //game logic
 function setup() {
+    document.getElementById('scores').style.display = 'none'
     score = 0;
     timeRemaining = initialTime;
+    document.getElementById('time').innerText = timeRemaining
     currentQuestionIndex = 0;
+    gameInSession = true
+    startTimer();
     loadQuestion();
 }
 function loadQuestion() {
     //make sure there IS another question...
     const question = trivia[currentQuestionIndex];
-    if (!question) { //existential check...does it exist?
+    if (!question && gameInSession) { //existential check...does it exist?
+        gameInSession = false
+        // debugger
         return gameOver();
     }
+    if (!gameInSession) {
+        return
+    }
     //create HTML from current question
-    document.querySelector("article").innerHTML = getQuestionHtml(question);
+    document.querySelector("main").innerHTML = getQuestionHtml(question);
     //add event listeners to answer buttons
-    document.querySelectorAll("article button").forEach(button => button.addEventListener("click", questionAnswered));
+    document.querySelectorAll("main button").forEach(button => button.addEventListener("click", questionAnswered));
+
 }
 function getQuestionHtml(question) {
     let html = `<h2>${question.q}</h2>`;
@@ -95,6 +127,7 @@ function questionAnswered(event) {
     else {
         //incorrect...
         //TODO: change timer
+        timeRemaining -= 10
         document.querySelector("output").textContent = "Nope, sorry...";
     }
     currentQuestionIndex++;
@@ -102,12 +135,32 @@ function questionAnswered(event) {
 }
 function gameOver() {
     alert(`Game over...your score is ${score}`);
+    const name = prompt("Please enter your name")
+    const scoreObject = { name, score }
+    let arr = []
+    if (localStorage.getItem('scores')) {
+        arr = JSON.parse(localStorage.getItem('scores'))
+    }
+
+    localStorage.setItem("scores", JSON.stringify([...arr, scoreObject]))
 }
 
-//high scores logic
-function viewHighScores() { }
+document.getElementById('view-scores').addEventListener('click', () => viewHighScores())
+document.getElementById('close').addEventListener('click', () => document.getElementById('scores').style.display = 'none')
 
-  //localStorage
+//high scores logic
+function viewHighScores() {
+    const scores = JSON.parse(localStorage.getItem('scores'))
+    scores.forEach(score => {
+        const item = document.createElement('li')
+        item.innerText = "name: " + score.name + " " + "score: " + score.score
+        document.getElementById('scores').append(item)
+    })
+    document.getElementById('scores').style.display = 'block'
+}
+
+//localStorage
+localStorage.setItem("currentQuestionIndex", JSON.stringify(currentQuestionIndex));
 
 
 

@@ -31,3 +31,8 @@ body {
     text-align: center;
     
 }
+
+ul, li {
+    text-decoration: none;
+    list-style: none;
+}
